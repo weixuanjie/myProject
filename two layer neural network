@@ -1,0 +1,192 @@
+import java.awt.BorderLayout;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.Arrays;
+
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.JTextPane;
+
+
+public class Multilayer {
+	
+	double[] h_input;
+	double[] h_output;
+	double[][]h_weight;
+	double[] h_error;
+	
+	double[] o_input;
+	double[] o_output;
+	double[][] o_weight;
+	double[] o_error;
+	
+	double[] toutput;
+	double rate;
+	double error;
+	
+	static double[] errorset;
+	int times;
+	
+	public Multilayer(int in_node,int h_node,int o_node,double rate,int times) {
+		
+		h_input=new double[in_node+1];
+		h_output=new double[h_node];
+		h_weight=new double[h_node][in_node+1];
+		h_error=new double[h_node];
+		
+		o_input=new double[h_node+1];
+		o_output=new double[o_node];
+		o_weight=new double[o_node][h_node+1];
+		o_error=new double[o_node];
+		
+		toutput=new double[o_node];
+		
+		this.rate=rate;
+		this.times=times;
+	}
+	
+	public void iniWeight() {;
+		
+		for(int i=0;i<o_weight.length;i++) 
+			for(int j=0;j<o_weight[i].length;j++) 
+				o_weight[i][j]=Math.random();
+
+		for(int i=0;i<h_weight.length;i++) 
+			for(int j=0;j<h_weight[i].length;j++) 
+				h_weight[i][j]=Math.random();
+	}
+	
+	public void setH_input(double[] h_input) {
+		this.h_input[0]=1;
+		for(int i=0;i<h_input.length;i++)
+		this.h_input[i+1]=h_input[i];
+	}
+	
+	public void setToutput(double[] toutput) {
+		this.toutput=toutput;
+	}
+	
+	
+	public void train(double[] hinput,double[] toutput) {
+
+		setH_input(hinput);
+		setToutput(toutput);
+		
+		//hidden layer output
+		h_output=getOutput(h_input,h_weight);
+		
+		//output layer output
+		for(int i=0;i<h_output.length;i++)
+			o_input[i+1]=h_output[i];
+			o_input[0]=1;
+			
+		o_output=getOutput(o_input,o_weight);			
+
+		//output layer error
+		for(int i=0;i<o_output.length;i++) {
+			o_error[i]=(toutput[i]-o_output[i])*o_output[i]*(1-o_output[i]);
+		}
+		
+		
+		//hidden layer error
+		double[] sum=new double[h_error.length];
+		for(int i=1;i<o_weight[0].length;i++) {
+			for(int j=0;j<o_weight.length;j++) 
+				sum[i-1]=o_weight[j][i]*o_error[j];
+		}
+		for(int i=0;i<h_error.length;i++)
+			h_error[i]=sum[i]*h_output[i]*(1-h_output[i]);
+		
+		
+		//update h_weight
+		h_weight=updateWeight(h_weight,h_error,h_input);
+
+		//update o_weight
+		o_weight=updateWeight(o_weight,o_error,o_input);
+			
+	}
+	
+	public double[][] updateWeight(double[][] weight,double[] error,double[] input) {
+		double[][] newWeight=new double[weight.length][weight[0].length];
+		for(int i=0;i<weight.length;i++) {
+			for(int j=0;j<weight[0].length;j++) {
+				newWeight[i][j]=weight[i][j]+rate*error[i]*input[j];
+			}weight[i]=newWeight[i];
+		}    
+		return weight;
+	}
+	
+	
+	public double[] getOutput(double[] input, double[][] weight) {
+		double[] output=new double[weight.length];
+		
+		for(int i=0;i<weight.length;i++) {
+			for(int j=0;j<weight[i].length;j++) {
+				output[i]+=weight[i][j]*input[j];
+			}
+			output[i]=sigmoid(output[i]);
+		}
+		return output;
+	}
+	
+	public double sigmoid(double value) {
+		double p= Math.pow(Math.E, -value);
+		return 1/(1+p);
+		/*if((1/(1+p))<=0.5)
+			return 0; 
+		return 1;*/
+	}
+	
+	public double[] predict(double[] value) {
+		setH_input(value);
+		
+		h_output=getOutput(h_input,h_weight);
+		
+		//output layer output
+		for(int i=0;i<h_output.length;i++)
+			o_input[i+1]=h_output[i];
+			o_input[0]=1;
+			
+		o_output=getOutput(o_input,o_weight);
+		System.out.println(Arrays.toString(o_output));
+		return o_output;
+	}
+	
+	public static void main(String[] args) {
+		
+		//double[][] dataset=new double[][]{{0,0},{1,0},{0,1},{1,1}};
+		//double[][] toutData= new double[][]{{0},{1},{1},{0}};
+
+		double[][] dataset=new double[][]{{1,0.5},{2,3},{3,7},{4,10},{-1,0.5},{-2,3},{-3,7},{-4,10},
+										{1,1.5},{2,5},{3,12},{4,19},{-1,1.5},{-2,5},{-3,12},{-4,19}};;
+		double[][] toutData=new double[][]{{0},{0},{0},{0},{0},{0},{0},{0},{1},{1},{1},{1},{1},{1},{1},{1}};
+		
+		Multilayer net=new Multilayer(2,2,1,0.1,5000);
+		net.iniWeight();
+		
+		errorset=new double[net.times];
+		for(int n=0;n<net.times;n++) {
+			
+			net.error=0;
+			for(int i=0;i<dataset.length;i++) {
+				net.train(dataset[i], toutData[i]);
+				
+				//sum squared error over patterns and units
+				for(int j=0;j<net.o_error.length;j++)
+				net.error+=(net.toutput[j]-net.o_output[j])*(net.toutput[j]-net.o_output[j]);
+			}
+			
+			for(int j=0;j<net.o_error.length;j++)
+				errorset[n]=Math.abs((net.error));
+			
+			System.out.println("error is"+(net.error)+" ; output is"+Arrays.toString(net.o_output));
+		}
+		//test
+		double[] test=new double[] {1,0};
+		net.predict(test);
+	}
+}
