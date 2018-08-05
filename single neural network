@@ -1,0 +1,60 @@
+import java.util.Arrays;  
+public class Neron{
+	public static int iterate=100;
+	public static double[] input;
+	public static double[] weight;
+	public static double output;
+	public static double tOutput;
+	public static double error=0;
+	public static double[] errorset;
+	public static double b=0;
+	private static double a=0.1;
+	private static double[] dataset;
+	private static double toutData;
+	
+
+	
+	public static double sigmoid(double value) {
+		double p= Math.pow(Math.E, -value);
+		return 1/(1+p);
+	}
+	
+	public static double getOutput(double[] input,double[] weight) {
+		double sum = 0;
+			for(int j=0;j<input.length;j++)
+				sum+=input[j]*weight[j];
+			return sigmoid(sum);
+	}
+	
+	public static void train(){
+		input=new double[weight.length];
+		errorset=new double[iterate];
+		for(int n=0;n<iterate;n++) {
+				error=tOutput-getOutput(input,weight);
+				for(int j=0;j<weight.length;j++)
+					weight[j]=weight[j]+a*error*input[j];
+				errorset[n]=Math.abs(error);
+				System.out.println(error);
+
+			}
+		}
+	
+	public static void main(String[] args) throws NumberFormatException{
+		
+		dataset=new double[]{1};
+		toutData=0.3;
+		//readData();
+		weight=new double[dataset.length];
+			for(int j=0;j<weight.length;j++)
+				weight[j]=Math.random();
+			for(int i=0;i<dataset.length;i++) {
+				input=dataset;
+				tOutput=toutData;
+				train();
+			}
+		double[] test=new double[] {1};
+		System.out.println(getOutput(test,weight));
+		System.out.println(Arrays.toString(test)+Arrays.toString(weight));
+	}
+	
+}
