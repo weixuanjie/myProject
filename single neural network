@@ -1,17 +1,41 @@
-import java.util.Arrays;  
-public class Neron{
-	public static int iterate=100;
-	public static double[] input;
-	public static double[] weight;
-	public static double output;
-	public static double tOutput;
-	public static double error=0;
-	public static double[] errorset;
-	public static double b=0;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
+
+public class SingleNeuron {
+	public double[] input;
+	public double[] weight;
+	public double output;
+	public double tOutput;
+	public double error=0;
+	public double[][] dataset;
+	public double[] toutData;
 	private static double a=0.1;
-	private static double[] dataset;
-	private static double toutData;
+	private static int iterate=40;
 	
+	
+	
+	@SuppressWarnings("resource")
+	public void readData(int row,int vol) throws NumberFormatException, IOException{
+		//should know the data set size in advance, other way?
+		dataset=new double[row][vol];
+		toutData= new double[dataset.length];
+		BufferedReader readin=new BufferedReader(new FileReader("C:\\Users\\Xuanj\\Desktop\\red\\dataset.txt"));
+		BufferedReader readtout=new BufferedReader(new FileReader("C:\\Users\\Xuanj\\Desktop\\red\\tOutput.txt"));
+
+		while(readin.readLine()!=null) {
+			for(int i=0;i<toutData.length;i++) {
+				String tout=readtout.readLine();
+				String in=readin.readLine();
+				String[] str=in.split(" ");
+				toutData[i]=Double.parseDouble(tout);
+				for(int j=0;j<str.length;j++) 
+					dataset[i][j]=Double.parseDouble(str[j]);
+				//System.out.println(Arrays.toString(dataset[i])+";"+Arrays.toString(toutData));
+			}
+		}
+	}
 
 	
 	public static double sigmoid(double value) {
@@ -19,42 +43,50 @@ public class Neron{
 		return 1/(1+p);
 	}
 	
-	public static double getOutput(double[] input,double[] weight) {
+	public double getOutput(double[] input,double[] weight) {
 		double sum = 0;
 			for(int j=0;j<input.length;j++)
 				sum+=input[j]*weight[j];
+			
+				if(sigmoid(sum)<=0.5)
+					output=0;
+				else
+					output=1;
 			return sigmoid(sum);
 	}
 	
-	public static void train(){
+	public void train(){
+		
+		weight=new double[dataset[0].length];
+		for(int j=0;j<weight.length;j++)
+			weight[j]=Math.random();
+		
 		input=new double[weight.length];
-		errorset=new double[iterate];
 		for(int n=0;n<iterate;n++) {
-				error=tOutput-getOutput(input,weight);
+			for(int i=0;i<dataset.length;i++) {
+				tOutput=toutData[i];
+				for(int j=0;j<weight.length;j++) {
+					input[j]=dataset[i][j];
+					error=tOutput-getOutput(input,weight);
+				}
 				for(int j=0;j<weight.length;j++)
 					weight[j]=weight[j]+a*error*input[j];
-				errorset[n]=Math.abs(error);
-				System.out.println(error);
-
 			}
+			System.out.println(Arrays.toString(weight));
+			//System.out.println(error);
 		}
+	}
 	
-	public static void main(String[] args) throws NumberFormatException{
-		
-		dataset=new double[]{1};
-		toutData=0.3;
-		//readData();
-		weight=new double[dataset.length];
-			for(int j=0;j<weight.length;j++)
-				weight[j]=Math.random();
-			for(int i=0;i<dataset.length;i++) {
-				input=dataset;
-				tOutput=toutData;
-				train();
-			}
-		double[] test=new double[] {1};
-		System.out.println(getOutput(test,weight));
-		System.out.println(Arrays.toString(test)+Arrays.toString(weight));
+	
+	public static void main(String[] args) throws NumberFormatException, IOException {
+		SingleNeuron neu=new SingleNeuron();
+		neu.readData(4,3);
+		//dataset=new double[][]{{0,0,1},{0,1,1},{1,0,1},{1,1,1}};
+		//toutData= new double[]{0,0,0,1};
+		neu.train();
+		double[] test=new double[] {1,0,1};
+		System.out.println(neu.getOutput(test,neu.weight));
+		System.out.println(Arrays.toString(test)+Arrays.toString(neu.weight));
 	}
 	
 }
